@@ -248,15 +248,14 @@ if [ $? -ne 0 ]; then
 	exit_with_error "Failed installing the firstboot installer pkg"
 fi
 
-# Manually downloaded and mounted CLI tools package from
-# https://developer.apple.com/download/more/
-# (used https://download.developer.apple.com/Developer_Tools/Command_Line_Tools_macOS_10.13_for_Xcode_9.3/Command_Line_Tools_macOS_10.13_for_Xcode_9.3.dmg)
-CLI_TOOLS_PKG='/Volumes/Command Line Developer Tools/Command Line Tools (macOS High Sierra version 10.13).pkg'
-msg_status "Installing CLI tools"
-installer -pkg "$CLI_TOOLS_PKG" -target "$MNT_SPARSEIMAGE"
-if [ $? -ne 0 ]; then
-  exit_with_error "Failed installing the firstboot installer pkg"
-fi
+# using Xcode 10 b6 CLI tools
+curl \
+  -Lf \
+  --continue-at - \
+  -o ./cltooks.pkg \
+  https://artifactory.inf.las1.saucelabs.net/artifactory/appdepend-local/apple.xcode.tools/Command_Line_Tools_macOS_10.13_for_Xcode_10.pkg
+
+installer -pkg ./cltooks.pkg -tgt "$MNT_SPARSEIMAGE"
 
 # Unmount and remount to make sure that is synchronized.
 msg_status "Remounting $SPARSEIMAGE"
