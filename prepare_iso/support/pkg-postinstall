@@ -1,7 +1,9 @@
 #!/bin/sh
 USER="__USER__PLACEHOLDER__"
-OSX_VERS=$(sw_vers -productVersion | awk -F "." '{print $2}')
+# OSX_VERS=$(sw_vers -productVersion | awk -F "." '{print $2}')
 PlistBuddy="/usr/libexec/PlistBuddy"
+OSX_VERS=$($PlistBuddy -c 'Print :ProductVersion' "$3/System/Library/CoreServices/SystemVersion.plist" \
+    | awk -F "." '{print $2}')
 
 target_ds_node="${3}/private/var/db/dslocal/nodes/Default"
 # Override the default behavior of sshd on the target volume to be not disabled
@@ -58,6 +60,7 @@ $PlistBuddy -c 'Add :DidSeeCloudSetup bool true' "$3/Users/$USER/Library/Prefere
 $PlistBuddy -c 'Add :LastSeenCloudProductVersion string 10.'"$OSX_VERS" "$3/Users/$USER/Library/Preferences/com.apple.SetupAssistant.plist"
 $PlistBuddy -c 'Add :DidSeeSiriSetup bool true' "$3/Users/$USER/Library/Preferences/com.apple.SetupAssistant.plist"
 $PlistBuddy -c 'Add :DidSeePrivacy bool true' "$3/Users/$USER/Library/Preferences/com.apple.SetupAssistant.plist"
+$PlistBuddy -c 'Add :DidSeeAppearanceSetup bool true' "$3/Users/$USER/Library/Preferences/com.apple.SetupAssistant.plist"
 
 # Fix ownership now that the above has made a Library folder as root
 chown -R "$USER_UID":20 "$3/Users/$USER"

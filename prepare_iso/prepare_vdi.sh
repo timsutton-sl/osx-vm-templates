@@ -170,6 +170,14 @@ if [ ! -e "$ESD" ]; then
 	exit_with_error "Can't locate an InstallESD.dmg in this source location $ESD!"
 fi
 
+msg_status "Downloading Command-line tools pkg"
+curl \
+  -Lf \
+  --continue-at - \
+  -o ./cltools.pkg \
+  https://path/to/xcode/cli/tools/pkg/for/10.14.pkg
+
+
 SYSVER_PLIST_PATH="$INSTALLER_PATH/Contents/SharedSupport/InstallInfo.plist"
 if [ ! -e "$SYSVER_PLIST_PATH" ]; then
 	exit_with_error "Can't locate InstallInfo.plist in $INSTALLER_PATH/Contents/SharedSupport/!"
@@ -188,7 +196,8 @@ HOST_OS_VERS_PATCH=$(echo $HOST_OS_VERS | awk -F "." '{print $3}')
 msg_status "host macOS version detected: $HOST_OS_VERS_MAJOR.$HOST_OS_VERS_MINOR.$HOST_OS_VERS_PATCH"
 
 if [ "$DMG_OS_VERS_MAJOR" != "$DMG_OS_VERS_MAJOR" ] || [ "$DMG_OS_VERS_MINOR" != "$HOST_OS_VERS_MINOR" ]; then
-	exit_with_error "Unfortunately prepare_vdi can only generate images of same version as the host"
+	# exit_with_error "Unfortunately prepare_vdi can only generate images of same version as the host"
+  msg_status "WARNING: building VM image with a different major version than the host"
 fi
 
 if [ -z "$OUTPUT_DMG" ]; then
@@ -248,15 +257,12 @@ if [ $? -ne 0 ]; then
 	exit_with_error "Failed installing the firstboot installer pkg"
 fi
 
-# Manually downloaded and mounted CLI tools package from
-# https://developer.apple.com/download/more/
-# (used https://download.developer.apple.com/Developer_Tools/Command_Line_Tools_macOS_10.13_for_Xcode_9.3/Command_Line_Tools_macOS_10.13_for_Xcode_9.3.dmg)
-CLI_TOOLS_PKG='/Volumes/Command Line Developer Tools/Command Line Tools (macOS High Sierra version 10.13).pkg'
-msg_status "Installing CLI tools"
-installer -pkg "$CLI_TOOLS_PKG" -target "$MNT_SPARSEIMAGE"
-if [ $? -ne 0 ]; then
-  exit_with_error "Failed installing the firstboot installer pkg"
-fi
+installer -pkg ./cltools.pkg -tgt "$MNT_SPARSEIMAGE"
+
+# msg_status "Removing prelinked kernel and rebuilding kextcache.."
+# rm -f "$MNT_SPARSEIMAGE/System/Library/PrelinkedKernels/prelinkedkernel"
+# touch "$MNT_SPARSEIMAGE/System/Library/Extensions"
+# kextcache -u "$MNT_SPARSEIMAGE"
 
 # Unmount and remount to make sure that is synchronized.
 msg_status "Remounting $SPARSEIMAGE"
